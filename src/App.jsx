@@ -345,7 +345,7 @@ export default function App() {
                 
                 <div className="mb-2 sm:mb-6 text-center shrink-0 flex flex-col items-center">
                     <img 
-                        src="TüFolk Logo.jpg" 
+                        src="TüFolk Logo.png" 
                         alt="TüFolk Logo" 
                         className="w-32 h-32 md:w-48 md:h-48 object-contain mb-2 mix-blend-multiply rounded-full border-4 border-[#8c7a61]/30 p-1 bg-white/50"
                     />
