@@ -1,6 +1,27 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import { geoPath, geoNaturalEarth1 } from 'd3-geo';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from 'firebase/firestore';
+
+const userFirebaseConfig = {
+    apiKey: "AIzaSyC5zZGumULldodFaHMvenHq-BSfD57X51U",
+    authDomain: "tuefolk.firebaseapp.com",
+    projectId: "tuefolk",
+    storageBucket: "tuefolk.firebasestorage.app",
+    messagingSenderId: "599412217839",
+    appId: "1:599412217839:web:304f84455b27dbd474481a"
+};
+
+const firebaseConfig = typeof __firebase_config !== 'undefined' && __firebase_config 
+    ? JSON.parse(__firebase_config) 
+    : userFirebaseConfig;
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' && __app_id ? __app_id : 'tuefolk-repertoire';
 
 const SONGS_DATA = [
     { id: 1, name: "Apertura (Sergio Pinto)", country: "Argentinien*" },
@@ -40,34 +61,34 @@ const SONGS_DATA = [
     { id: 35, name: "Pelo Telefone", country: "Brasilien" },
     { id: 36, name: "The Crooked Stovepipe", country: "Kanada" },
     { id: 37, name: "Caicai Vilu", country: "Chile" },
-    { id: 38, name: "Chun Jiang Hua Yue Ye", country: "China" },
+    { id: 38, name: "Chun Jiang Hua Yue Ye (A Moonlit Night on the Spring River)", country: "China" },
     { id: 39, name: "Cumbia del Monte", country: "Kolumbien" },
     { id: 40, name: "El Helwa Di", country: "Ägypten" },
-    { id: 42, name: "Tsangala da Gogona", country: "Georgien" },
-    { id: 43, name: "Deutscher (58. Altländer)", country: "Deutschland" },
-    { id: 44, name: "Kalitera sti Mavri Gis", country: "Griechenland" },
-    { id: 45, name: "Kalyan", country: "Indien" },
-    { id: 46, name: "Kameh", country: "Libanon" },
-    { id: 47, name: "Yek Mumik", country: "Kurdistan (Region)*" },
-    { id: 49, name: "Rumelay", country: "Roma/Balkan*" },
-    { id: 50, name: "Montanara di Carpino", country: "Italien (Apulien)" },
-    { id: 51, name: "Bravade", country: "Niederlande" },
-    { id: 52, name: "Apo Xeno Topo", country: "Griechenland" },
-    { id: 54, name: "Japanisches Lied & irische Melodie", country: "Japan / Irland" },
-    { id: 55, name: "Nakhes fun Kinder", country: "Klezmer (aschkenasisch-jüdisch, Osteuropa)" },
-    { id: 56, name: "Maria Faia", country: "Portugal" },
-    { id: 57, name: "Písali Noviny", country: "Slowakei" },
-    { id: 58, name: "Der Schlossergsell", country: "Deutschland (Schwaben)" },
-    { id: 59, name: "Polska", country: "Schweden" },
-    { id: 60, name: "Sangini Dhun", country: "Nepal" },
-    { id: 61, name: "Yüksek Yüksek Tepelere", country: "Türkei" },
-    { id: 62, name: "Walzer 8-4", country: "Deutschland" },
-    { id: 63, name: "1,2,3,4 Zwiefacher", country: "Deutschland" },
-    { id: 64, name: "Migldi Magldi", country: "Wales*" },
-    { id: 65, name: "Lo Sivano", country: "Kurdistan (Region)*" },
-    { id: 66, name: "O Africa", country: "Kongo*" },
-    { id: 67, name: "Suna Hai Hathi", country: "Indien*" },
-    { id: 68, name: "Hicaz Mandıra", country: "Türkei" }
+    { id: 41, name: "Tsangala da Gogona", country: "Georgien" },
+    { id: 42, name: "Deutscher (58. Altländer)", country: "Deutschland" },
+    { id: 43, name: "Kalitera sti Mavri Gis", country: "Griechenland" },
+    { id: 44, name: "Kalyan", country: "Indien" },
+    { id: 45, name: "Kameh (وقمح)", country: "Libanon" },
+    { id: 46, name: "Yek Mumik", country: "Kurdistan (Region)*" },
+    { id: 47, name: "Rumelay / Rumelaj", country: "Roma/Balkan*" },
+    { id: 48, name: "Montanara di Carpino", country: "Italien (Apulien)" },
+    { id: 49, name: "Bravade", country: "Niederlande" },
+    { id: 50, name: "Apo Xeno Topo", country: "Griechenland" },
+    { id: 51, name: "Japanisches Lied & irische Melodie", country: "Japan / Irland" },
+    { id: 52, name: "Nakhes fun Kinder", country: "Klezmer (aschkenasisch-jüdisch, Osteuropa)" },
+    { id: 53, name: "Maria Faia", country: "Portugal" },
+    { id: 54, name: "Písali Noviny", country: "Slowakei" },
+    { id: 55, name: "Der Schlossergsell", country: "Deutschland (Schwaben)" },
+    { id: 56, name: "Polska", country: "Schweden" },
+    { id: 57, name: "Sangini Dhun", country: "Nepal" },
+    { id: 58, name: "Yüksek Yüksek Tepelere", country: "Türkei" },
+    { id: 59, name: "Walzer 8-4", country: "Deutschland" },
+    { id: 60, name: "1,2,3,4 Zwiefacher", country: "Deutschland" },
+    { id: 61, name: "Migldi Magldi", country: "Wales*" },
+    { id: 62, name: "Lo Sivano", country: "Kurdistan (Region)*" },
+    { id: 63, name: "O Africa", country: "Kongo*" },
+    { id: 64, name: "Suna Hai Hathi", country: "Indien*" },
+    { id: 65, name: "Hicaz Mandıra", country: "Türkei" }
 ];
 
 const GEO_DICT = {
@@ -161,6 +182,10 @@ const GlobalStyles = () => (
             left: 5%;
             top: 20%;
         }
+
+        .like-button-anim:active {
+            transform: scale(0.8);
+        }
     `}</style>
 );
 
@@ -195,11 +220,60 @@ export default function App() {
     const [hoveredCountry, setHoveredCountry] = useState(null); 
     const [tooltipData, setTooltipData] = useState({ visible: false, x: 0, y: 0, data: null });
     
+    // Firebase states
+    const [user, setUser] = useState(null);
+    const [rawLikes, setRawLikes] = useState([]);
+    
     const mapContainerRef = useRef(null);
     const svgRef = useRef(null);
     const zoomRef = useRef(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
     const [zoomState, setZoomState] = useState({ k: 1, x: 0, y: 0 });
+
+    useEffect(() => {
+        // Authenticate silently to give user an ID for liking songs
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+        initAuth();
+        
+        const unsubscribe = onAuthStateChanged(auth, setUser);
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (!user) return;
+        
+        // Listen to all public likes in real-time
+        const likesRef = collection(db, 'artifacts', appId, 'public', 'data', 'song_likes');
+        const unsubscribe = onSnapshot(likesRef, (snapshot) => {
+            const fetchedLikes = [];
+            snapshot.forEach(doc => fetchedLikes.push(doc.data()));
+            setRawLikes(fetchedLikes);
+        }, (error) => {
+            console.error("Error fetching likes: ", error);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    const likesData = useMemo(() => {
+        const data = {};
+        rawLikes.forEach(like => {
+            if (!data[like.songId]) {
+                data[like.songId] = { count: 0, isLikedByMe: false };
+            }
+            data[like.songId].count++;
+            if (like.userId === user?.uid) {
+                data[like.songId].isLikedByMe = true;
+            }
+        });
+        return data;
+    }, [rawLikes, user]);
 
     const markersData = useMemo(() => {
         const mapData = {};
@@ -280,6 +354,7 @@ export default function App() {
         let x = event.clientX + 15;
         let y = event.clientY + 15;
 
+        // Smart tooltip positioning for mobile to prevent overflow
         if (x + 280 > window.innerWidth) x = Math.max(10, event.clientX - 295);
         if (y + 150 > window.innerHeight) y = Math.max(10, event.clientY - 165);
 
@@ -315,6 +390,25 @@ export default function App() {
         }
     };
 
+    const toggleLike = async (event, songId) => {
+        event.stopPropagation();
+        if (!user) return;
+        
+        const isLiked = likesData[songId]?.isLikedByMe;
+        const docId = `${songId}_${user.uid}`;
+        const likeRef = doc(db, 'artifacts', appId, 'public', 'data', 'song_likes', docId);
+        
+        try {
+            if (isLiked) {
+                await deleteDoc(likeRef);
+            } else {
+                await setDoc(likeRef, { songId, userId: user.uid });
+            }
+        } catch (error) {
+            console.error("Error toggling like:", error);
+        }
+    };
+
     const isSongHovered = (songCountry) => {
         if (!hoveredCountry) return false;
         return hoveredCountry.replace('*', '') === songCountry.replace('*', '');
@@ -347,7 +441,7 @@ export default function App() {
                     <img 
                         src="TüFolk Logo.png" 
                         alt="TüFolk Logo" 
-                        className="w-32 h-32 md:w-48 md:h-48 object-contain mb-2 mix-blend-multiply rounded-full border-4 border-[#8c7a61]/30 p-1 bg-white/50"
+                        className="w-full max-w-[400px] h-auto object-contain mb-4 mix-blend-multiply"
                     />
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d94a38] mb-1 leading-tight">
                         TüFolk Tüfolkestra
@@ -361,6 +455,7 @@ export default function App() {
                     {SONGS_DATA.map(song => {
                         const hasCoords = !!GEO_DICT[song.country];
                         const isHovered = isSongHovered(song.country);
+                        const songLikes = likesData[song.id] || { count: 0, isLikedByMe: false };
                         
                         return (
                             <div 
@@ -381,7 +476,23 @@ export default function App() {
                                         <div className="text-lg text-[#8c7a61] truncate">{song.country}</div>
                                     </div>
                                 </div>
-                                <div className="ml-2 flex-shrink-0">
+                                <div className="ml-2 flex-shrink-0 flex items-center gap-3">
+                                    {/* Like Button */}
+                                    <button 
+                                        onClick={(e) => toggleLike(e, song.id)}
+                                        className={`like-button-anim flex items-center gap-1 transition-colors duration-200 outline-none
+                                            ${songLikes.isLikedByMe ? 'text-red-500' : 'text-[#a6967f] hover:text-red-400 opacity-60 group-hover:opacity-100'}`}
+                                        title={songLikes.isLikedByMe ? "Gefällt mir nicht mehr" : "Gefällt mir"}
+                                    >
+                                        <svg viewBox="0 0 24 24" fill={songLikes.isLikedByMe ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" className="w-6 h-6 sm:w-7 sm:h-7">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                                        </svg>
+                                        {songLikes.count > 0 && (
+                                            <span className="text-lg sm:text-xl font-bold font-sans">{songLikes.count}</span>
+                                        )}
+                                    </button>
+
+                                    {/* Location Pin */}
                                     {hasCoords ? (
                                         <span className={`text-[#d94a38] transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>📍</span>
                                     ) : (
