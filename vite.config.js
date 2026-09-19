@@ -8,5 +8,5 @@ export default defineConfig({
     react(),
     tailwindcss(), // <-- ADD THIS PLUGIN
   ],
-  base: 'tuefolk', 
+  base: '/tuefolk/', 
 })
